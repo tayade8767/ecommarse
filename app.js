@@ -8,6 +8,16 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
 var app = express();
+require("dotenv").config();
+
+const flash = require("connect-flash");
+app.use(flash());
+const expressSession = require('express-session');
+app.use(expressSession({
+  resave: false,
+  saveUninitialized:false,
+  secret: process.env.SESSION_SECRET || 'defaultSecret',
+}))
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
