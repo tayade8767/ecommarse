@@ -175,7 +175,7 @@ router.post('/owner-create',async function(req, res, next) {
 router.get("/createproducts",(req,res,next) => {
   let success = req.flash('success');
   res.render("createproducts",{ success });
-  });
+});
   
   
   router.post("/products/create", upload.single('image') ,async (req,res,next) => {
@@ -203,7 +203,7 @@ router.get("/createproducts",(req,res,next) => {
   
 
   //  to show all the products in the shop route
-  router.get("/shop",async (req,res,next) => {
+  router.get("/shop", isloggedin,async (req,res,next) => {
     let products = await productModel.find();
     res.render("shop",{ products:products });
   });
@@ -214,30 +214,94 @@ router.get('/admin', function(req, res, next) {
 });
 
 
-router.get('/cart', function(req, res, next) {
-  res.render('cart');
+// Get the cart view
+let cart = [];
+
+// Get the cart view
+// Get the cart view
+// Get the cart view
+router.get('/cart', isloggedin, function(req, res, next) {
+  res.render('cart', { product : null });
 });
+
+// Add a product to the cart using a GET request
+router.get('/cart/add/:id', isloggedin, async function(req, res, next) {
+  try {
+    const productId = req.params.id;
+    const product = await productModel.findById(productId);
+    
+    let loggedinuserproducts = req.user.cart;
+    
+    let flag = false;
+    
+    // Use the `equals` method to compare ObjectId instances
+    loggedinuserproducts.forEach((loggedinuserproduct) => {
+      if (loggedinuserproduct._id.equals(productId)) {
+        flag = true;
+      }
+    });
+    
+        if(flag === false) {
+          req.user.cart.push(product);
+          await req.user.save();
+          console.log('Product added successfully');
+          // console.log(product)
+        } else {
+          console.log("his product is already present in loggedin user cart");
+          // console.log(product)
+        }
+          
+          res.render('cart', { product : product });
+            
+            
+            
+    // if (product) {
+    //   req.user.cart.push(product);
+    //   await req.user.save();
+    //   console.log(`Added product to cart: ${productId}`);
+    // } else {
+    //   console.log(`Product not found: ${productId}`);
+    // }
+        
+    // Fetch the full cart details
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+
+
+
 
 
 //   isloggedin is required to check if user is logges in or not
 
+// Corrected isloggedin function
 async function isloggedin(req, res, next) {
   let token = req.cookies.token;
-  if(!token){
-    req.flash("error","You need to login first");
-    res.redirect("/");
-  } else {
-    try {
-      let decoded = jwt.verify(req.cookies.token,process.env.JWT_KEY);
-      let user = await findOne({ email: decoded.email }).select("-password");
-      req.user = user;
-      next();
-    } catch (err){
-        req.flash("error","Something went wrong");
-        res.redirect("/");
+  if (!token) {
+    req.flash("error", "You need to login first");
+    return res.redirect("/");
+  }
+
+  try {
+    let decoded = jwt.verify(token, process.env.JWT_KEY);
+    let user = await userModel.findOne({ email: decoded.email }).select("-password");
+    if (!user) {
+      req.flash("error", "User not found");
+      return res.redirect("/");
     }
+    req.user = user;
+    next();
+  } catch (err) {
+    req.flash("error", "Something went wrong");
+    return res.redirect("/");
   }
 }
+
+
+
 
 
 
